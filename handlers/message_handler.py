@@ -7,6 +7,7 @@ import logging
 import config
 from services import gemini_service
 from services.slack_blocks import build_category_checkboxes, build_word_count_picker
+from services.url_fetcher import extract_urls, strip_urls, fetch_all_urls
 from state.session_store import SessionPhase, store
 
 logger = logging.getLogger(__name__)
@@ -49,12 +50,35 @@ def register(app):
         if channel_id != config.TARGET_CHANNEL_ID:
             return
 
+        # Check if message contains URLs — fetch their content
+        urls = extract_urls(text)
+        user_commentary = strip_urls(text)
+        original_message = text
+
+        if urls:
+            say(
+                text="Fetching content from your link(s)...",
+                thread_ts=message_ts,
+            )
+            fetched = fetch_all_urls(urls)
+            if fetched:
+                if user_commentary:
+                    original_message = f"User's note: {user_commentary}\n\n{fetched}"
+                else:
+                    original_message = fetched
+            elif not user_commentary:
+                say(
+                    text="I couldn't read the content from that URL. Try posting the text directly instead.",
+                    thread_ts=message_ts,
+                )
+                return
+
         # Create session keyed by the message's ts (which becomes the thread)
         session = store.create(
             channel_id=channel_id,
             thread_ts=message_ts,
             user_id=user_id,
-            original_message=text,
+            original_message=original_message,
         )
         session.phase = SessionPhase.AWAITING_LENGTH_PICK
 
