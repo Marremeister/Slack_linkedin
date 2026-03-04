@@ -125,13 +125,43 @@ def build_draft_messages(drafts: list[str]) -> list[dict]:
                     },
                     {
                         "type": "button",
-                        "text": {"type": "plain_text", "text": "Edit"},
+                        "text": {"type": "plain_text", "text": "Edit with AI"},
                         "action_id": f"edit_draft_{i}",
+                    },
+                    {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "Edit Manually"},
+                        "action_id": f"edit_draft_manual_{i}",
                     },
                 ],
             }
         )
     return blocks
+
+
+def build_manual_edit_modal(draft: str, draft_index: int, thread_ts: str, channel_id: str) -> dict:
+    """Build a Slack modal for manually editing a draft."""
+    return {
+        "type": "modal",
+        "callback_id": "manual_edit_draft_submit",
+        "private_metadata": f"{channel_id}|{thread_ts}|{draft_index}",
+        "title": {"type": "plain_text", "text": "Edit Draft"},
+        "submit": {"type": "plain_text", "text": "Save"},
+        "close": {"type": "plain_text", "text": "Cancel"},
+        "blocks": [
+            {
+                "type": "input",
+                "block_id": "draft_text_block",
+                "element": {
+                    "type": "plain_text_input",
+                    "action_id": "draft_text_input",
+                    "multiline": True,
+                    "initial_value": draft,
+                },
+                "label": {"type": "plain_text", "text": "Edit your post"},
+            }
+        ],
+    }
 
 
 def build_image_style_checkboxes(
