@@ -60,7 +60,7 @@ def register(app):
 
             blocks = build_category_checkboxes(categories)
             say(
-                text="Pick up to 3 angle categories:",
+                text="Pick categories for your LinkedIn post:",
                 blocks=blocks,
                 thread_ts=thread_ts,
             )
@@ -82,7 +82,7 @@ def register(app):
             return
 
         selected = body["actions"][0].get("selected_options", [])
-        session.selected_categories = [opt["value"] for opt in selected][:3]
+        session.selected_categories = [opt["value"] for opt in selected]
 
     # --- Confirm category selection → generate drafts ---
     @app.action("confirm_categories")
@@ -94,9 +94,20 @@ def register(app):
         if not session:
             return
 
+        # Check for custom category from the input block
+        state_values = body.get("state", {}).get("values", {})
+        custom_block = state_values.get("custom_category_block", {})
+        custom_input = custom_block.get("custom_category_input", {})
+        custom_category = (custom_input.get("value") or "").strip()
+
+        if custom_category:
+            categories = list(session.selected_categories)
+            categories.append(custom_category)
+            session.selected_categories = categories
+
         if not session.selected_categories:
             say(
-                text="Please select at least 1 category first.",
+                text="Please select at least 1 category or describe a custom one.",
                 thread_ts=thread_ts,
             )
             return
@@ -140,6 +151,27 @@ def register(app):
 
         selected = body["actions"][0].get("selected_options", [])
         session.selected_image_styles = [opt["value"] for opt in selected][:3]
+
+    # --- Upload own image instead of generating ---
+    @app.action("upload_own_image")
+    def handle_upload_own_image(ack, body, say):
+        ack()
+        channel_id = body["channel"]["id"]
+        thread_ts = body["message"].get("thread_ts") or body["message"]["ts"]
+        session = store.get(channel_id, thread_ts)
+        if not session or session.phase != SessionPhase.AWAITING_STYLE_PICK:
+            return
+
+        session.phase = SessionPhase.AWAITING_IMAGE_UPLOAD
+        say(
+            text="Upload your image in this thread and I'll use it for your post.",
+            thread_ts=thread_ts,
+        )
+
+    # --- Custom category text input (just acknowledge) ---
+    @app.action("custom_category_input")
+    def handle_custom_category_input(ack):
+        ack()
 
     # --- Custom style text input (just acknowledge) ---
     @app.action("custom_style_input")

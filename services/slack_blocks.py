@@ -66,7 +66,7 @@ def build_category_checkboxes(
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": "*Pick up to 3 angle categories* for your LinkedIn post:",
+                "text": "*Pick categories for your LinkedIn post* (or add your own below):",
             },
         },
         {
@@ -78,6 +78,20 @@ def build_category_checkboxes(
                     "options": options,
                 }
             ],
+        },
+        {
+            "type": "input",
+            "block_id": "custom_category_block",
+            "optional": True,
+            "element": {
+                "type": "plain_text_input",
+                "action_id": "custom_category_input",
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": "Describe a custom category...",
+                },
+            },
+            "label": {"type": "plain_text", "text": "Custom category (optional)"},
         },
         {
             "type": "actions",
@@ -214,7 +228,12 @@ def build_image_style_checkboxes(
                     "text": {"type": "plain_text", "text": "Generate Images"},
                     "action_id": "confirm_styles",
                     "style": "primary",
-                }
+                },
+                {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "Upload My Own Image"},
+                    "action_id": "upload_own_image",
+                },
             ],
         },
     ]

@@ -6,7 +6,7 @@ import logging
 
 import config
 from services import gemini_service
-from services.slack_blocks import build_category_checkboxes, build_word_count_picker
+from services.slack_blocks import build_category_checkboxes, build_publish_options, build_word_count_picker
 from services.url_fetcher import extract_urls, strip_urls, fetch_all_urls
 from state.session_store import SessionPhase, store
 
@@ -26,7 +26,8 @@ def register(app):
         thread_ts = event.get("thread_ts")
         message_ts = event.get("ts")
 
-        if not text:
+        has_files = bool(event.get("files"))
+        if not text and not has_files:
             return
 
         # --- Thread reply: might be feedback ---
@@ -37,6 +38,10 @@ def register(app):
 
             if session.phase == SessionPhase.AWAITING_DRAFT_FEEDBACK:
                 _handle_draft_feedback(session, text, say, client)
+                return
+
+            if session.phase == SessionPhase.AWAITING_IMAGE_UPLOAD:
+                _handle_image_upload(session, event, say, client)
                 return
 
             if session.phase == SessionPhase.AWAITING_IMAGE_FEEDBACK:
@@ -193,3 +198,67 @@ def _handle_image_feedback(session, feedback_text, say, client):
             thread_ts=session.thread_ts,
             channel=session.channel_id,
         )
+
+
+def _handle_image_upload(session, event, say, client):
+    files = event.get("files", [])
+    if not files:
+        say(
+            text="Please upload an image in this thread.",
+            thread_ts=session.thread_ts,
+            channel=session.channel_id,
+        )
+        return
+
+    # Take the first image file
+    uploaded_file = None
+    for f in files:
+        if f.get("mimetype", "").startswith("image/"):
+            uploaded_file = f
+            break
+
+    if not uploaded_file:
+        say(
+            text="That doesn't look like an image. Please upload a PNG, JPG, or similar image file.",
+            thread_ts=session.thread_ts,
+            channel=session.channel_id,
+        )
+        return
+
+    # Download the file from Slack
+    try:
+        import requests
+        url = uploaded_file["url_private"]
+        headers = {"Authorization": f"Bearer {config.SLACK_BOT_TOKEN}"}
+        download = requests.get(url, headers=headers, timeout=30)
+        download.raise_for_status()
+        image_bytes = download.content
+    except Exception:
+        logger.exception("Failed to download uploaded image")
+        say(
+            text="Sorry, I couldn't download that image. Please try uploading again.",
+            thread_ts=session.thread_ts,
+            channel=session.channel_id,
+        )
+        return
+
+    session.selected_image_bytes = image_bytes
+    session.image_bytes_list = [image_bytes]
+    session.selected_image_index = 0
+    session.phase = SessionPhase.IMAGE_ACCEPTED
+
+    say(
+        text="Image received!",
+        thread_ts=session.thread_ts,
+        channel=session.channel_id,
+    )
+
+    # Move to publish options
+    session.phase = SessionPhase.AWAITING_PUBLISH_DECISION
+    blocks = build_publish_options(session.selected_draft, has_image=True)
+    say(
+        text="Ready to publish?",
+        blocks=blocks,
+        thread_ts=session.thread_ts,
+        channel=session.channel_id,
+    )

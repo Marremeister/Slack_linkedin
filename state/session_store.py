@@ -17,6 +17,7 @@ class SessionPhase(enum.Enum):
     AWAITING_STYLE_PICK = "awaiting_style_pick"
     GENERATING_IMAGES = "generating_images"
     AWAITING_IMAGE_ACTION = "awaiting_image_action"
+    AWAITING_IMAGE_UPLOAD = "awaiting_image_upload"
     AWAITING_IMAGE_FEEDBACK = "awaiting_image_feedback"
     IMAGE_ACCEPTED = "image_accepted"
     AWAITING_PUBLISH_DECISION = "awaiting_publish_decision"
