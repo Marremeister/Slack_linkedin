@@ -278,6 +278,31 @@ def build_image_messages(num_images: int) -> list[dict]:
     return blocks
 
 
+def build_publish_edit_modal(draft: str, thread_ts: str, channel_id: str) -> dict:
+    """Build a Slack modal for editing the draft before publishing."""
+    return {
+        "type": "modal",
+        "callback_id": "publish_edit_submit",
+        "private_metadata": f"{channel_id}|{thread_ts}",
+        "title": {"type": "plain_text", "text": "Edit Draft"},
+        "submit": {"type": "plain_text", "text": "Save"},
+        "close": {"type": "plain_text", "text": "Cancel"},
+        "blocks": [
+            {
+                "type": "input",
+                "block_id": "draft_text_block",
+                "element": {
+                    "type": "plain_text_input",
+                    "action_id": "draft_text_input",
+                    "multiline": True,
+                    "initial_value": draft,
+                },
+                "label": {"type": "plain_text", "text": "Edit your post"},
+            }
+        ],
+    }
+
+
 def build_publish_options(draft: str, has_image: bool = True) -> list[dict]:
     summary = draft[:2900] + "..." if len(draft) > 2900 else draft
     blocks = [
@@ -310,6 +335,11 @@ def build_publish_options(draft: str, has_image: bool = True) -> list[dict]:
                     "type": "button",
                     "text": {"type": "plain_text", "text": "Schedule"},
                     "action_id": "schedule_post",
+                },
+                {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "Edit Before Publishing"},
+                    "action_id": "edit_before_publish",
                 },
             ],
         }

@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 
 from services import linkedin_service
-from services.slack_blocks import build_schedule_picker
+from services.slack_blocks import build_publish_edit_modal, build_publish_options, build_schedule_picker
 from state.session_store import SessionPhase, store
 
 logger = logging.getLogger(__name__)
@@ -110,4 +110,47 @@ def register(app):
                 f"_(This is a mock schedule — LinkedIn integration coming soon)_"
             ),
             thread_ts=thread_ts,
+        )
+
+    @app.action("edit_before_publish")
+    def handle_edit_before_publish(ack, body, client):
+        ack()
+        channel_id = body["channel"]["id"]
+        thread_ts = body["message"].get("thread_ts") or body["message"]["ts"]
+        session = store.get(channel_id, thread_ts)
+        if not session or session.phase != SessionPhase.AWAITING_PUBLISH_DECISION:
+            return
+
+        modal = build_publish_edit_modal(
+            draft=session.selected_draft,
+            thread_ts=thread_ts,
+            channel_id=channel_id,
+        )
+        client.views_open(trigger_id=body["trigger_id"], view=modal)
+
+    @app.view("publish_edit_submit")
+    def handle_publish_edit_submit(ack, body, client):
+        ack()
+        metadata = body["view"]["private_metadata"]
+        channel_id, thread_ts = metadata.split("|")
+
+        edited_text = (
+            body["view"]["state"]["values"]
+            ["draft_text_block"]["draft_text_input"]["value"]
+        )
+
+        session = store.get(channel_id, thread_ts)
+        if not session:
+            return
+
+        session.selected_draft = edited_text
+        session.phase = SessionPhase.AWAITING_PUBLISH_DECISION
+
+        has_image = session.selected_image_bytes is not None
+        blocks = build_publish_options(session.selected_draft, has_image=has_image)
+        client.chat_postMessage(
+            channel=channel_id,
+            thread_ts=thread_ts,
+            text="Draft updated! Ready to publish:",
+            blocks=blocks,
         )
