@@ -14,11 +14,18 @@ Message:
 def build_suggest_image_styles_prompt(draft: str) -> str:
     return f"""You are a visual content strategist for LinkedIn. Given the following LinkedIn post draft, suggest 6-8 distinct image style categories that would complement this post well.
 
-Each style should be a short label (2-5 words) representing a different visual approach.
+All suggestions must fit within these brand guidelines:
+- Black background, white text, minimal clean layout
+- Matt glass effects on cards and UI elements
+- Elegant, modern, minimal european editorial aesthetic
+- Photographic styles: realistic european settings, black & white photography, or clean parisian-style color photography of people
+- No bright colors, no cartoons, no hand-drawn or playful styles
+
+Each style should be a short label (2-5 words) representing a different visual approach within these constraints.
 
 Return ONLY a JSON array of strings. No explanation, no markdown fences.
 
-Example output: ["Minimalist Infographic", "Professional Photo", "Abstract Gradient", "Hand-drawn Sketch", "Bold Typography", "Data Visualization"]
+Example output: ["B&W European Office", "Parisian Street Portrait", "Glass Card Infographic", "Minimal Data Layout", "Editorial Photography", "Dark Keynote Slide"]
 
 Post draft:
 {draft}"""

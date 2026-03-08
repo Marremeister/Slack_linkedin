@@ -4,9 +4,14 @@ def build_image_prompt(draft: str, style: str) -> str:
 The image should visually complement this LinkedIn post:
 {draft}
 
-Requirements:
-- Professional and suitable for LinkedIn
-- Clean composition with good visual hierarchy
+Visual guidelines (strict):
+- Black background with simple white text where text is needed
+- Font style: clean sans-serif (Roboto-like), all lowercase body text, no capital letters
+- Minimal and clean layout with strong visual hierarchy
+- Use matt glass effects on cards, panels, and UI elements
+- Elegant, modern, minimal aesthetic — european editorial feel
+- For photographic content: realistic photos in european settings, european offices with european people
+- Photography preference: black & white, or clean parisian-style color photography of people
 - No text overlays or watermarks
 - High quality, polished look
 - Aspect ratio suitable for LinkedIn feed (landscape or square)"""
@@ -25,9 +30,16 @@ LinkedIn post it accompanies:
 User feedback on what to change:
 {feedback}
 
-Requirements:
-- Incorporate the user's feedback
-- Professional and suitable for LinkedIn
-- Clean composition with good visual hierarchy
+Visual guidelines (strict — always apply unless user feedback explicitly overrides):
+- Black background with simple white text where text is needed
+- Font style: clean sans-serif (Roboto-like), all lowercase body text, no capital letters
+- Minimal and clean layout with strong visual hierarchy
+- Use matt glass effects on cards, panels, and UI elements
+- Elegant, modern, minimal aesthetic — european editorial feel
+- For photographic content: realistic photos in european settings, european offices with european people
+- Photography preference: black & white, or clean parisian-style color photography of people
 - No text overlays or watermarks
-- High quality, polished look"""
+- High quality, polished look
+
+Additional:
+- Incorporate the user's feedback above"""
