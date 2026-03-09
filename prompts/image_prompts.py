@@ -5,8 +5,8 @@ The image should visually complement this LinkedIn post:
 {draft}
 
 Visual guidelines (strict):
-- Black background with simple white text where text is needed
-- Font style: clean sans-serif (Roboto-like), all lowercase body text, no capital letters
+- Do NOT include any text, letters, words, or typography in the image
+- Black background
 - Minimal and clean layout with strong visual hierarchy
 - Use matt glass effects on cards, panels, and UI elements
 - Elegant, modern, minimal aesthetic — european editorial feel
@@ -31,8 +31,8 @@ User feedback on what to change:
 {feedback}
 
 Visual guidelines (strict — always apply unless user feedback explicitly overrides):
-- Black background with simple white text where text is needed
-- Font style: clean sans-serif (Roboto-like), all lowercase body text, no capital letters
+- Do NOT include any text, letters, words, or typography in the image
+- Black background
 - Minimal and clean layout with strong visual hierarchy
 - Use matt glass effects on cards, panels, and UI elements
 - Elegant, modern, minimal aesthetic — european editorial feel
