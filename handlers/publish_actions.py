@@ -25,17 +25,25 @@ def register(app):
         result = linkedin_service.publish_post(
             session.selected_draft, session.selected_image_bytes
         )
+
+        if result["status"] == "error":
+            say(
+                text=f"*Publish failed* :x:\n`{result['error']}`\nYou can try again.",
+                thread_ts=thread_ts,
+            )
+            return
+
         session.phase = SessionPhase.DONE
 
-        say(
-            text=(
-                f"*Published!* :white_check_mark:\n"
-                f"Post ID: `{result['post_id']}`\n"
-                f"URL: {result['url']}\n"
-                f"_(This is a mock publish — LinkedIn integration coming soon)_"
-            ),
-            thread_ts=thread_ts,
+        msg = (
+            f"*Published!* :white_check_mark:\n"
+            f"Post ID: `{result['post_id']}`\n"
+            f"URL: {result['url']}"
         )
+        if result.get("mock"):
+            msg += "\n_(This is a mock publish — set LINKEDIN_ACCESS_TOKEN for real publishing)_"
+
+        say(text=msg, thread_ts=thread_ts)
 
     @app.action("schedule_post")
     def handle_schedule_post(ack, body, say):
@@ -99,18 +107,30 @@ def register(app):
             scheduled_dt,
             session.selected_image_bytes,
         )
+
+        if result["status"] == "error":
+            say(
+                text=f"*Schedule failed* :x:\n`{result['error']}`\nYou can try again.",
+                thread_ts=thread_ts,
+            )
+            return
+
         session.phase = SessionPhase.DONE
 
-        say(
-            text=(
-                f"*Scheduled!* :calendar:\n"
-                f"Post ID: `{result['post_id']}`\n"
-                f"Scheduled for: {result['scheduled_for']}\n"
-                f"URL: {result['url']}\n"
-                f"_(This is a mock schedule — LinkedIn integration coming soon)_"
-            ),
-            thread_ts=thread_ts,
+        msg = (
+            f"*Scheduled!* :calendar:\n"
+            f"Post ID: `{result['post_id']}`\n"
         )
+        if result.get("scheduled_for"):
+            msg += f"Scheduled for: {result['scheduled_for']}\n"
+        msg += f"URL: {result['url']}"
+
+        if result.get("note"):
+            msg += f"\n_Note: {result['note']}_"
+        if result.get("mock"):
+            msg += "\n_(This is a mock schedule — set LINKEDIN_ACCESS_TOKEN for real publishing)_"
+
+        say(text=msg, thread_ts=thread_ts)
 
     @app.action("edit_before_publish")
     def handle_edit_before_publish(ack, body, client):

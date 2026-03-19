@@ -403,6 +403,7 @@ class TestPublishActions:
     @patch("handlers.publish_actions.linkedin_service")
     def test_publish_now(self, mock_linkedin):
         mock_linkedin.publish_post.return_value = {
+            "status": "published",
             "post_id": "p1",
             "url": "https://linkedin.com/p1",
         }
@@ -419,6 +420,51 @@ class TestPublishActions:
 
         assert session.phase == SessionPhase.DONE
         mock_linkedin.publish_post.assert_called_once_with("Final post", b"IMG")
+        # No mock disclaimer in non-mock response
+        assert "mock" not in say.call_args.kwargs["text"].lower()
+
+    @patch("handlers.publish_actions.linkedin_service")
+    def test_publish_now_error(self, mock_linkedin):
+        mock_linkedin.publish_post.return_value = {
+            "status": "error",
+            "error": "401 Unauthorized",
+        }
+
+        session = store.create("C1", "ts1", "U1", "msg")
+        session.phase = SessionPhase.AWAITING_PUBLISH_DECISION
+        session.selected_draft = "Final post"
+        session.selected_image_bytes = None
+
+        body = _make_action_body("C1", "ts1", "publish_now")
+        say = MagicMock()
+        handler = self.app.get_action_handler("publish_now")
+        handler(ack=MagicMock(), body=body, say=say)
+
+        # Session stays in AWAITING_PUBLISH_DECISION so user can retry
+        assert session.phase == SessionPhase.AWAITING_PUBLISH_DECISION
+        assert "401 Unauthorized" in say.call_args.kwargs["text"]
+
+    @patch("handlers.publish_actions.linkedin_service")
+    def test_publish_now_mock_mode(self, mock_linkedin):
+        mock_linkedin.publish_post.return_value = {
+            "status": "published",
+            "post_id": "mock-post-12345",
+            "url": "https://www.linkedin.com/feed/update/mock-post-12345",
+            "mock": True,
+        }
+
+        session = store.create("C1", "ts1", "U1", "msg")
+        session.phase = SessionPhase.AWAITING_PUBLISH_DECISION
+        session.selected_draft = "Final post"
+        session.selected_image_bytes = None
+
+        body = _make_action_body("C1", "ts1", "publish_now")
+        say = MagicMock()
+        handler = self.app.get_action_handler("publish_now")
+        handler(ack=MagicMock(), body=body, say=say)
+
+        assert session.phase == SessionPhase.DONE
+        assert "mock publish" in say.call_args.kwargs["text"].lower()
 
     def test_schedule_post(self):
         session = store.create("C1", "ts1", "U1", "msg")
@@ -436,6 +482,7 @@ class TestPublishActions:
     @patch("handlers.publish_actions.linkedin_service")
     def test_confirm_schedule(self, mock_linkedin):
         mock_linkedin.schedule_post.return_value = {
+            "status": "scheduled",
             "post_id": "s1",
             "scheduled_for": "2025-06-01T10:00:00",
             "url": "https://linkedin.com/s1",
@@ -460,6 +507,63 @@ class TestPublishActions:
 
         assert session.phase == SessionPhase.DONE
         mock_linkedin.schedule_post.assert_called_once()
+
+    @patch("handlers.publish_actions.linkedin_service")
+    def test_confirm_schedule_error(self, mock_linkedin):
+        mock_linkedin.schedule_post.return_value = {
+            "status": "error",
+            "error": "Network timeout",
+        }
+
+        session = store.create("C1", "ts1", "U1", "msg")
+        session.phase = SessionPhase.AWAITING_SCHEDULE_TIME
+        session.selected_draft = "Post text"
+        session.selected_image_bytes = None
+
+        body = _make_action_body("C1", "ts1", "confirm_schedule")
+        body["state"]["values"] = {
+            "block1": {
+                "schedule_date": {"selected_date": "2025-06-01"},
+                "schedule_time": {"selected_time": "10:00"},
+            },
+        }
+
+        say = MagicMock()
+        handler = self.app.get_action_handler("confirm_schedule")
+        handler(ack=MagicMock(), body=body, say=say)
+
+        assert session.phase == SessionPhase.AWAITING_SCHEDULE_TIME
+        assert "Network timeout" in say.call_args.kwargs["text"]
+
+    @patch("handlers.publish_actions.linkedin_service")
+    def test_confirm_schedule_immediate_publish_note(self, mock_linkedin):
+        mock_linkedin.schedule_post.return_value = {
+            "status": "published",
+            "post_id": "urn:li:share:123",
+            "url": "https://www.linkedin.com/feed/update/urn:li:share:123",
+            "note": "LinkedIn does not support native scheduling for personal profiles. "
+                    "The post was published immediately.",
+        }
+
+        session = store.create("C1", "ts1", "U1", "msg")
+        session.phase = SessionPhase.AWAITING_SCHEDULE_TIME
+        session.selected_draft = "Post text"
+        session.selected_image_bytes = None
+
+        body = _make_action_body("C1", "ts1", "confirm_schedule")
+        body["state"]["values"] = {
+            "block1": {
+                "schedule_date": {"selected_date": "2025-06-01"},
+                "schedule_time": {"selected_time": "10:00"},
+            },
+        }
+
+        say = MagicMock()
+        handler = self.app.get_action_handler("confirm_schedule")
+        handler(ack=MagicMock(), body=body, say=say)
+
+        assert session.phase == SessionPhase.DONE
+        assert "published immediately" in say.call_args.kwargs["text"]
 
     def test_edit_before_publish_opens_modal(self):
         session = store.create("C1", "ts1", "U1", "msg")

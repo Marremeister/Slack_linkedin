@@ -20,6 +20,8 @@ os.environ.setdefault("SLACK_BOT_TOKEN", "xoxb-test-token")
 os.environ.setdefault("SLACK_APP_TOKEN", "xapp-test-token")
 os.environ.setdefault("TARGET_CHANNEL_ID", "C_TEST_CHANNEL")
 os.environ.setdefault("GEMINI_API_KEY", "test-gemini-key")
+os.environ.setdefault("LINKEDIN_ACCESS_TOKEN", "")
+os.environ.setdefault("LINKEDIN_PERSON_URN", "")
 
 # ---------------------------------------------------------------------------
 # 2. Stub out the google.genai Client that gemini_service creates at import
